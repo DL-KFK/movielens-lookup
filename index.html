@@ -73,6 +73,98 @@
     }
 
     a { color: #0a58ca; }
+    .error {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.poster {
+  width: 100%;
+  max-width: 300px;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 0 auto 1rem auto;
+}
+
+.info {
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.imdb-link {
+  color: #0a58ca;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  align-self: flex-start;
+  transition: all 0.2s ease;
+}
+
+.imdb-link:hover {
+  background: #e9ecef;
+  color: #0a58ca;
+  text-decoration: none;
+}
+
+.search-box {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 2rem;
+}
+
+input {
+  flex: 1;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: border-color 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #4a7ef3;
+  box-shadow: 0 0 0 3px rgba(74, 126, 243, 0.1);
+}
+
+button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4a7ef3 0%, #3b5bdb 100%);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 126, 243, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
   </style>
 </head>
 
