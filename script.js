@@ -1,13 +1,17 @@
 const API_KEY = "1106b01e";
 let movies = {};
 
+// Завантажуємо u.item
 fetch("u.item")
   .then(r => r.text())
   .then(text => {
     text.split("\n").forEach(line => {
       const parts = line.split("|");
-      if (parts.length > 1) {
-        movies[parts[0]] = parts[1]; // беремо лише назву
+      if (parts.length > 3) {
+        const id = parts[0];
+        const title = parts[1];
+        const imdb = parts[3];
+        movies[id] = { title, imdb };
       }
     });
   });
@@ -17,42 +21,33 @@ async function lookup() {
   const out = document.getElementById("result");
 
   if (!movies[id]) {
-    out.innerHTML = "<p>Фільм не знайдено</p>";
+    out.innerHTML = "<p>Фільм не знайдено.</p>";
     return;
   }
 
-  const title = movies[id];
+  const { title, imdb } = movies[id];
 
-  // 1) Пошук через s= (завжди повертає imdbID + poster)
-  const searchUrl = `https://www.omdbapi.com/?s=${encodeURIComponent(title)}&apikey=${API_KEY}`;
-  const sr = await fetch(searchUrl).then(r => r.json());
+  // OMDb poster fetch
+  const omdb = await fetch(
+    `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${API_KEY}`
+  ).then(r => r.json());
 
-  if (!sr.Search || !sr.Search.length) {
-    out.innerHTML = `<p>Не знайдено в OMDb</p>`;
-    return;
-  }
-
-  const first = sr.Search[0];
-  const imdbID = first.imdbID;
-  const poster = first.Poster !== "N/A"
-    ? first.Poster
+  const poster = omdb.Poster && omdb.Poster !== "N/A"
+    ? omdb.Poster
     : "https://via.placeholder.com/500x750?text=No+Poster";
 
-  // 2) Отримуємо повні дані
-  const detail = await fetch(
-    `https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`
-  ).then(r => r.json());
+  const year = omdb.Year || "?";
+  const genres = omdb.Genre || "";
 
   out.innerHTML = `
     <div class="card">
       <img class="poster" src="${poster}" />
+
       <div class="info">
-        <strong>${detail.Title}</strong>
-        <span>Рік: ${detail.Year}</span>
-        <span>Жанри: ${detail.Genre}</span>
-        <a href="https://www.imdb.com/title/${imdbID}" target="_blank">
-          Відкрити IMDb
-        </a>
+        <strong>${title}</strong>
+        <span>Рік: ${year}</span>
+        <span>Жанри: ${genres}</span>
+        <a href="${imdb}" target="_blank">Відкрити IMDb</a>
       </div>
     </div>
   `;
