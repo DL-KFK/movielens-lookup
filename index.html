@@ -1,16 +1,90 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MovieLens Lookup</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 { margin-bottom: 1rem; }
+
+    .search-box {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+
+    input {
+      flex: 1;
+      padding: 0.7rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #4a7ef3;
+      color: white;
+      cursor: pointer;
+    }
+
+    #result {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .poster {
+      width: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+      margin-bottom: 1rem;
+    }
+
+    .info {
+      font-size: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    a { color: #0a58ca; }
+  </style>
 </head>
+
 <body>
-  <h1>Пошук фільму по ID (MovieLens 100k)</h1>
+  <h1>MovieLens Lookup</h1>
 
-  <input id="movieId" type="number" placeholder="Введіть ID" />
-  <button onclick="lookup()">Пошук</button>
+  <div class="search-box">
+    <input id="movieId" type="number" placeholder="Введіть MovieLens ID…" />
+    <button onclick="lookup()">Пошук</button>
+  </div>
 
-  <p id="result"></p>
+  <div id="result"></div>
 
   <script src="script.js"></script>
 </body>
