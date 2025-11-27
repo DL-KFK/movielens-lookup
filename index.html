@@ -1,183 +1,397 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MovieLens Lookup</title>
-
+  <title>MovieLens 100K Explorer</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #fafafa;
-      margin: 0;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    * {
+      box-sizing: border-box;
     }
 
-    h1 { margin-bottom: 1rem; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      margin-bottom: 0.5rem;
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
+
+    .course-info {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .course-info h3 {
+      margin: 0 0 0.5rem 0;
+      color: #4a7ef3;
+      font-size: 1.2rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: #f8f9fa;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      font-size: 0.95rem;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .tab-btn:hover {
+      background: #e9ecef;
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #4a7ef3 0%, #3b5bdb 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(74, 126, 243, 0.4);
+    }
+
+    .search-section {
+      display: none;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .search-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     .search-box {
       display: flex;
-      gap: 0.5rem;
-      width: 100%;
-      max-width: 400px;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .search-box input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.875rem 1.25rem;
+      font-size: 1rem;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #4a7ef3;
+      box-shadow: 0 0 0 4px rgba(74, 126, 243, 0.1);
+    }
+
+    .search-box button {
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4a7ef3 0%, #3b5bdb 100%);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .search-box button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(74, 126, 243, 0.3);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
       margin-bottom: 2rem;
     }
 
-    input {
-      flex: 1;
-      padding: 0.7rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      padding: 0.7rem 1rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 6px;
-      background: #4a7ef3;
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      cursor: pointer;
+      padding: 1.75rem;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
 
-    #result {
-      width: 100%;
-      max-width: 600px;
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #4a7ef3, #28a745, #ffc107, #dc3545);
+      background-size: 300% 100%;
+      animation: gradient 3s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+
+    .stat-card p {
+      margin: 0;
+      font-size: 1rem;
+      opacity: 0.9;
     }
 
     .card {
-      display: flex;
-      flex-direction: column;
       background: white;
-      border-radius: 12px;
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+      border: 1px solid #f0f0f0;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+
+    .card.success { border-left: 5px solid #28a745; }
+    .card.error { border-left: 5px solid #dc3545; }
+    .card.warning { border-left: 5px solid #ffc107; }
+    .card.loading { border-left: 5px solid #4a7ef3; }
+
+    .movie-item, .user-item {
       padding: 1rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .poster {
-      width: 100%;
-      border-radius: 8px;
-      object-fit: cover;
+      background: #f8f9fa;
+      border-radius: 12px;
       margin-bottom: 1rem;
+      border-left: 4px solid #4a7ef3;
     }
 
-    .info {
-      font-size: 1.1rem;
+    .user-ratings {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      background: #fafbfc;
+    }
+
+    .user-rating-item {
+      padding: 1rem;
+      border-bottom: 1px solid #e9ecef;
       display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    a { color: #0a58ca; }
-    .error {
-  color: #dc3545;
-  font-weight: 500;
-}
+    .user-rating-item:last-child {
+      border-bottom: none;
+    }
 
-.card {
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  margin-bottom: 1rem;
-}
+    .rating-stars {
+      color: #ffc107;
+      font-size: 1.2rem;
+    }
 
-.poster {
-  width: 100%;
-  max-width: 300px;
-  height: 450px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 0 auto 1rem auto;
-}
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
 
-.info {
-  font-size: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  text-align: left;
-}
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #4a7ef3, #28a745);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(74, 126, 243, 0.3);
+    }
 
-.imdb-link {
-  color: #0a58ca;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  align-self: flex-start;
-  transition: all 0.2s ease;
-}
+    .quick-search {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin: 0.25rem;
+      transition: all 0.2s ease;
+    }
 
-.imdb-link:hover {
-  background: #e9ecef;
-  color: #0a58ca;
-  text-decoration: none;
-}
+    .quick-search:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
 
-.search-box {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
-  max-width: 400px;
-  margin-bottom: 2rem;
-}
+    .error { color: #dc3545; }
+    .warning { color: #856404; }
+    .success { color: #28a745; }
 
-input {
-  flex: 1;
-  padding: 0.8rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 2px solid #e9ecef;
-  transition: border-color 0.2s ease;
-}
+    @media (max-width: 768px) {
+      .tabs { flex-direction: column; }
+      .search-box { flex-direction: column; }
+      .search-box input { min-width: auto; }
+      h1 { font-size: 2rem; }
+    }
 
-input:focus {
-  outline: none;
-  border-color: #4a7ef3;
-  box-shadow: 0 0 0 3px rgba(74, 126, 243, 0.1);
-}
-
-button {
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #4a7ef3 0%, #3b5bdb 100%);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 126, 243, 0.3);
-}
-
-button:active {
-  transform: translateY(0);
-}
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding: 2rem;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 
 <body>
-  <h1>MovieLens Lookup</h1>
-  <p>Пошук фільмів з MovieLens 100K по ID</p>
-  <p>Зроблено для Практичного завдання 6 дисципліни "Основи ШІ" КФК СумДУ</p>
-  <div class="search-box">
-    <input id="movieId" type="number" placeholder="Введіть MovieLens ID…" />
-    <button onclick="lookup()">Пошук</button>
+  <div class="container">
+    <h1>🎬 MovieLens 100K Explorer</h1>
+    <p class="subtitle">Повний аналіз датасету MovieLens 100K (100,000 рейтингів, 1682 фільми, 943 користувачі)</p>
+
+    <div class="course-info">
+      <h3>🎓 Зроблено для практичного завдання 6</h3>
+      <p><strong>Дисципліна:</strong> "Основи штучного інтелекту"</p>
+      <p><strong>Кафедра:</strong> КФК СумДУ</p>
+      <p><strong>📊 Функціонал:</strong> Пошук фільмів, аналіз користувачів, статистика, рекомендації</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('movies')">🎥 Фільми</button>
+      <button class="tab-btn" onclick="switchTab('users')">👤 Користувачі</button>
+      <button class="tab-btn" onclick="switchTab('stats')">📊 Статистика</button>
+    </div>
+
+    <!-- 🎥 СЕКЦІЯ ФІЛЬМІВ -->
+    <div id="movies" class="search-section active">
+      <div class="search-box">
+        <input id="movieId" type="number" placeholder="ID фільму (1-1682)" />
+        <input id="movieTitle" type="text" placeholder="Або назва фільму..." />
+        <button onclick="lookupMovie()">🔍 Пошук фільму</button>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+        <p><strong>💡 Популярні ID для тестування:</strong></p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+          <button class="quick-search" onclick="quickSearchMovie(1)">1 (Toy Story)</button>
+          <button class="quick-search" onclick="quickSearchMovie(50)">50 (Star Wars)</button>
+          <button class="quick-search" onclick="quickSearchMovie(318)">318 (Shawshank)</button>
+          <button class="quick-search" onclick="quickSearchMovie(296)">296 (Pulp Fiction)</button>
+        </div>
+      </div>
+
+      <div id="movieResult"></div>
+    </div>
+
+    <!-- 👤 СЕКЦІЯ КОРИСТУВАЧІВ -->
+    <div id="users" class="search-section">
+      <div class="search-box">
+        <input id="userId" type="number" placeholder="ID користувача (1-943)" />
+        <button onclick="lookupUser()">🔍 Пошук користувача</button>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+        <p><strong>💡 Активні користувачі для тестування:</strong></p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+          <button class="quick-search" onclick="quickSearchUser(1)">1</button>
+          <button class="quick-search" onclick="quickSearchUser(2)">2</button>
+          <button class="quick-search" onclick="quickSearchUser(196)">196</button>
+          <button class="quick-search" onclick="quickSearchUser(334)">334</button>
+        </div>
+      </div>
+
+      <div id="userResult"></div>
+    </div>
+
+    <!-- 📊 СЕКЦІЯ СТАТИСТИКИ -->
+    <div id="stats" class="search-section">
+      <div class="stats-grid" id="statsGrid"></div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div id="topMovies" class="card"></div>
+        <div id="topUsers" class="card"></div>
+      </div>
+    </div>
   </div>
 
-  <div id="result"></div>
+  <div class="footer">
+    <p>© 2025 MovieLens 100K Explorer | Зроблено для практичного заняття 6 "Основи ШІ" КФК СумДУ</p>
+    <p><small>Датасет: <a href="https://grouplens.org/datasets/movielens/100k/" target="_blank">MovieLens 100K</a></small></p>
+  </div>
 
   <script src="script.js"></script>
 </body>
