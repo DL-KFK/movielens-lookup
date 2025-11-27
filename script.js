@@ -1,251 +1,369 @@
-const API_KEY = "1106b01e";
+// Глобальні змінні
 let movies = {};
+let users = {};
+let ratings = {};
 let moviesLoaded = false;
+let usersLoaded = false;
+let ratingsLoaded = false;
 
-// 🆕 ВЛАСНІ PLACEHOLDER ЗОБРАЖЕННЯ (без зовнішніх доменів)
-const PLACEHOLDER_POSTER = `
-data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNkM3NUREMCIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4Ij4KTm8gUG9zdGVyPC90ZXh0PgogIDx0ZXh0IHg9IjUwJSIgeT0iNjAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5Nb3ZpZUxlbnMgMTAwSzwvdGV4dD4KPC9zdmc+Cg==
-`.replace(/\s/g, '');
+const API_KEY = "1106b01e";
+const PLACEHOLDER_POSTER = `data:image/svg+xml;base64,...`; // з попереднього коду
 
-const ERROR_POSTER = `
-data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjREMzNTQ1Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI0MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIiBmb250LXNpemU9IjE2Ij5FUlJPUjwvdGV4dD4KICA8dGV4dCB4PSI1MCUiIHk9IjYwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiI+QVBJIGVycm9yPC90ZXh0PgogIDx0ZXh0IHg9IjUwJSIgeT0iNzAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5Nb3ZpZUxlbnMgMTAwSzwvdGV4dD4KPC9zdmc+Cg==
-`.replace(/\s/g, '');
-
-async function loadMovies() {
-  const resultDiv = document.getElementById('result');
+// 🆕 ЗАВАНТАЖЕННЯ ВСЬОГО ДАТАСЕТУ
+async function loadFullDataset() {
+  const resultDiv = document.getElementById('movieResult');
   
   try {
-    console.log('🔍 Завантажуємо u.item...');
-    
     resultDiv.innerHTML = `
       <div class="card loading">
-        <p>⏳ Завантаження бази даних...</p>
-      </div>
-    `;
-    
-    const response = await fetch("./u.item");
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const text = await response.text();
-    const lines = text.split("\n").filter(line => line.trim() && !line.startsWith('::'));
-    let loadedCount = 0;
-    
-    lines.forEach(line => {
-      const parts = line.split("|");
-      if (parts.length >= 24) {
-        const id = parts[0].trim();
-        let titleWithYear = parts[1].trim();
-        
-        // 🆕 ТОЧНИЙ ПАРСИНГ НАЗВИ ТА РОКУ
-        const yearMatch = titleWithYear.match(/\(\s*(\d{4})\s*\)$/);
-        const year = yearMatch ? yearMatch[1] : '';
-        const title = yearMatch 
-          ? titleWithYear.slice(0, -yearMatch[0].length).trim()
-          : titleWithYear.replace(/::$/, '').trim();
-        
-        const imdb = parts[3].trim();
-        
-        movies[id] = { 
-          title: title, 
-          year: year, 
-          imdb: imdb === '\\N' ? '' : imdb 
-        };
-        loadedCount++;
-      }
-    });
-    
-    moviesLoaded = true;
-    console.log(`✅ Завантажено ${loadedCount} фільмів`);
-    
-    resultDiv.innerHTML = `
-      <div class="card success">
-        <h3>🎉 База даних готова!</h3>
-        <p><strong>${loadedCount}</strong> фільмів завантажено</p>
-        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-          <p><strong>💡 Тестові ID:</strong></p>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
-            <button class="quick-search" onclick="quickSearch(1)">1</button>
-            <button class="quick-search" onclick="quickSearch(318)">318</button>
-            <button class="quick-search" onclick="quickSearch(296)">296</button>
-            <button class="quick-search" onclick="quickSearch(50)">50</button>
+        <p>⏳ Завантаження повного датасету MovieLens 100K...</p>
+        <div style="margin-top: 1rem;">
+          <div class="progress-bar">
+            <div class="progress" style="width: 0%"></div>
           </div>
         </div>
       </div>
     `;
+
+    // 1. Завантажуємо фільми
+    console.log('📁 Завантажуємо u.item...');
+    const moviesResponse = await fetch('./u.item');
+    const moviesText = await moviesResponse.text();
+    parseMovies(moviesText);
+    updateProgress(33);
+
+    // 2. Завантажуємо користувачів
+    console.log('📁 Завантажуємо u.user...');
+    const usersResponse = await fetch('./u.user');
+    const usersText = await usersResponse.text();
+    parseUsers(usersText);
+    updateProgress(66);
+
+    // 3. Завантажуємо рейтинги
+    console.log('📁 Завантажуємо u.data...');
+    const ratingsResponse = await fetch('./u.data');
+    const ratingsText = await ratingsResponse.text();
+    parseRatings(ratingsText);
+    updateProgress(100);
+
+    moviesLoaded = usersLoaded = ratingsLoaded = true;
     
+    console.log(`✅ Датасет завантажено:
+    • Фільмів: ${Object.keys(movies).length}
+    • Користувачів: ${Object.keys(users).length}
+    • Рейтингів: ${Object.keys(ratings).length}`);
+
+    showDatasetStats();
+
   } catch (error) {
     console.error('❌ Помилка завантаження:', error);
     resultDiv.innerHTML = `
       <div class="card error">
-        <h3>❌ Помилка завантаження u.item</h3>
+        <h3>❌ Помилка завантаження датасету</h3>
         <p><code>${error.message}</code></p>
+        <p>Перевірте наявність файлів:</p>
+        <ul>
+          <li><code>u.item</code> (фільми)</li>
+          <li><code>u.user</code> (користувачі)</li>
+          <li><code>u.data</code> (рейтинги)</li>
+        </ul>
       </div>
     `;
   }
 }
 
-async function lookup() {
-  const idInput = document.getElementById("movieId");
-  const id = idInput.value.trim();
-  const out = document.getElementById("result");
+// 🆕 ПАРСИНГ ФІЛЬМІВ
+function parseMovies(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  lines.forEach(line => {
+    const parts = line.split('|');
+    if (parts.length >= 24) {
+      const id = parts[0].trim();
+      let titleWithYear = parts[1].trim();
+      const yearMatch = titleWithYear.match(/\((\d{4})\)$/);
+      const year = yearMatch ? yearMatch[1] : '';
+      const title = yearMatch 
+        ? titleWithYear.slice(0, -yearMatch[0].length).trim()
+        : titleWithYear.replace(/::$/, '').trim();
+      const imdb = parts[3].trim();
+      
+      movies[id] = { id, title, year, imdb: imdb === '\\N' ? '' : imdb };
+    }
+  });
+}
 
-  if (!id || isNaN(id) || id < 1 || id > 1682) {
-    out.innerHTML = `
-      <div class="card error">
-        <p>❌ Введіть коректний ID (1-1682)</p>
-      </div>
-    `;
-    return;
-  }
+// 🆕 ПАРСИНГ КОРИСТУВАЧІВ
+function parseUsers(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  lines.forEach(line => {
+    const parts = line.split('|');
+    if (parts.length >= 5) {
+      const id = parts[0].trim();
+      const age = parts[1].trim();
+      const gender = parts[2].trim();
+      const occupation = parts[3].trim();
+      const zip = parts[4].trim();
+      
+      users[id] = { 
+        id, 
+        age: parseInt(age), 
+        gender, 
+        occupation, 
+        zip,
+        ratings: new Map()
+      };
+    }
+  });
+}
 
-  if (!moviesLoaded || !movies[id]) {
-    out.innerHTML = `
-      <div class="card error">
-        <p>❌ Фільм з ID <strong>${id}</strong> не знайдено</p>
-      </div>
-    `;
-    return;
-  }
-
-  const movie = movies[id];
+// 🆕 ПАРСИНГ РЕЙТИНГІВ
+function parseRatings(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  lines.forEach(line => {
+    const [userId, movieId, rating, timestamp] = line.split('\t').map(s => s.trim());
+    
+    // Додаємо рейтинг користувача
+    if (users[userId]) {
+      users[userId].ratings.set(movieId, { rating: parseFloat(rating), timestamp: parseInt(timestamp) });
+    }
+    
+    // Статистика по фільмах
+    if (!ratings[movieId]) {
+      ratings[movieId] = { ratings: [], total: 0, avg: 0 };
+    }
+    ratings[movieId].ratings.push(parseFloat(rating));
+    ratings[movieId].total++;
+  });
   
-  out.innerHTML = `
-    <div class="card loading">
-      <p>🔍 Завантажуємо "${movie.title}"...</p>
+  // Обчислюємо середні рейтинги
+  Object.keys(ratings).forEach(movieId => {
+    const movieRatings = ratings[movieId].ratings;
+    ratings[movieId].avg = movieRatings.reduce((a, b) => a + b, 0) / movieRatings.length;
+  });
+}
+
+// 🆕 ПОКАЗ СТАТИСТИКИ
+function showDatasetStats() {
+  const statsGrid = document.getElementById('statsGrid');
+  const topMoviesDiv = document.getElementById('topMovies');
+  const topUsersDiv = document.getElementById('topUsers');
+
+  // Статистика
+  const totalRatings = Object.values(ratings).reduce((sum, r) => sum + r.total, 0);
+  const avgRating = totalRatings / Object.keys(ratings).length;
+
+  statsGrid.innerHTML = `
+    <div class="stat-card">
+      <h3>${Object.keys(movies).length}</h3>
+      <p>Фільмів</p>
+    </div>
+    <div class="stat-card">
+      <h3>${Object.keys(users).length}</h3>
+      <p>Користувачів</p>
+    </div>
+    <div class="stat-card">
+      <h3>${totalRatings.toLocaleString()}</h3>
+      <p>Рейтингів</p>
+    </div>
+    <div class="stat-card">
+      <h3>${avgRating.toFixed(2)}</h3>
+      <p>Середній рейтинг</p>
     </div>
   `;
 
-  try {
-    // 🆕 ПОКРАЩЕНИЙ ПОШУК OMDb З ТОЧНИМ РОКОМ
-    const searchQuery = `"${movie.title}" ${movie.year}`.trim();
-    console.log('🔍 OMDb запит:', searchQuery);
-    
-    const omdbResponse = await fetch(
-      `https://www.omdbapi.com/?t=${encodeURIComponent(searchQuery)}&year=${movie.year}&apikey=${API_KEY}`
+  // Топ-10 фільмів
+  const topMovies = Object.entries(ratings)
+    .sort(([,a], [,b]) => b.total - a.total)
+    .slice(0, 10)
+    .map(([id, stats]) => ({
+      id,
+      title: movies[id]?.title || 'Unknown',
+      ratings: stats.total,
+      avg: stats.avg.toFixed(2)
+    }));
+
+  topMoviesDiv.innerHTML = `
+    <div class="card">
+      <h3>🎬 Топ-10 найпопулярніших фільмів</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        ${topMovies.map(m => `
+          <div class="movie-item">
+            <strong>${m.title}</strong><br>
+            <span>⭐ ${m.avg} (${m.ratings} голосів)</span><br>
+            <small>ID: ${m.id}</small>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  // Топ-10 активних користувачів
+  const topUsers = Object.entries(users)
+    .map(([id, user]) => ({
+      id,
+      ...user,
+      ratingCount: user.ratings.size
+    }))
+    .sort((a, b) => b.ratingCount - a.ratingCount)
+    .slice(0, 10);
+
+  topUsersDiv.innerHTML = `
+    <div class="card">
+      <h3>👤 Найактивніші користувачі</h3>
+      <div class="user-ratings">
+        ${topUsers.map(u => `
+          <div style="padding: 0.75rem; border-bottom: 1px solid #eee;">
+            <strong>ID ${u.id}</strong> | 
+            ${u.gender} | 
+            ${u.age} років | 
+            ${u.occupation} | 
+            <span style="color: #28a745;">${u.ratingCount} оцінок</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// 🆕 ПОШУК КОРИСТУВАЧА
+async function lookupUser() {
+  const userId = document.getElementById('userId').value.trim();
+  const resultDiv = document.getElementById('userResult');
+
+  if (!userId || isNaN(userId) || userId < 1 || userId > 943) {
+    resultDiv.innerHTML = '<div class="card error"><p>❌ Введіть коректний ID користувача (1-943)</p></div>';
+    return;
+  }
+
+  if (!users[userId]) {
+    resultDiv.innerHTML = `<div class="card error"><p>❌ Користувач ${userId} не знайдений</p></div>`;
+    return;
+  }
+
+  const user = users[userId];
+  const userRatings = Array.from(user.ratings.entries())
+    .map(([movieId, rating]) => ({
+      movieId,
+      rating: rating.rating,
+      movieTitle: movies[movieId]?.title || 'Unknown'
+    }))
+    .sort((a, b) => b.rating - a.rating);
+
+  resultDiv.innerHTML = `
+    <div class="card">
+      <h2>👤 Користувач ${userId}</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+        <div>
+          <strong>Вік:</strong> ${user.age}<br>
+          <strong>Стать:</strong> ${user.gender}<br>
+          <strong>Професія:</strong> ${user.occupation}<br>
+          <strong>Поштовий індекс:</strong> ${user.zip}
+        </div>
+        <div>
+          <strong>Кількість оцінок:</strong> ${userRatings.length}<br>
+          <strong>Середній рейтинг:</strong> ${userRatings.reduce((sum, r) => sum + r.rating, 0) / userRatings.length?.toFixed(2) || '0'}
+        </div>
+      </div>
+      
+      <h3>⭐ Топ-10 оцінок користувача</h3>
+      <div class="user-ratings" style="max-height: 300px; overflow-y: auto;">
+        ${userRatings.slice(0, 10).map(r => `
+          <div style="padding: 0.75rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+            <span><strong>${r.movieTitle}</strong> (ID ${r.movieId})</span>
+            <span style="color: #28a745; font-weight: bold;">⭐ ${r.rating}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// 🆕 ПОШУК ФІЛЬМУ (покращений)
+async function lookupMovie() {
+  const movieId = document.getElementById('movieId').value.trim();
+  const movieTitle = document.getElementById('movieTitle').value.trim().toLowerCase();
+  const resultDiv = document.getElementById('movieResult');
+
+  if (!movieId && !movieTitle) {
+    resultDiv.innerHTML = '<div class="card warning"><p>Введіть ID або назву фільму</p></div>';
+    return;
+  }
+
+  let targetMovie = null;
+
+  // Пошук по ID
+  if (movieId && movies[movieId]) {
+    targetMovie = movies[movieId];
+  }
+  
+  // Пошук по назві
+  if (!targetMovie && movieTitle) {
+    targetMovie = Object.values(movies).find(movie => 
+      movie.title.toLowerCase().includes(movieTitle)
     );
-    
-    const omdb = await omdbResponse.json();
-    console.log('📊 OMDb відповідь:', omdb);
+  }
 
-    let poster = PLACEHOLDER_POSTER;
-    let year = movie.year || "???";
-    let genres = "Невідомо";
-    let imdbUrl = "#";
-    let imdbRating = "N/A";
-    let plot = "Опис недоступний";
-    let runtime = "N/A";
-    let foundExactMatch = false;
+  if (!targetMovie) {
+    resultDiv.innerHTML = '<div class="card error"><p>❌ Фільм не знайдено</p></div>';
+    return;
+  }
 
-    if (omdb.Response === "True") {
-      // 🆕 ПЕРЕВІРКА ТОЧНОГО ЗУСИЛЛЯ
-      const omdbTitle = omdb.Title?.toLowerCase() || '';
-      const movieTitle = movie.title.toLowerCase();
-      
-      foundExactMatch = omdbTitle.includes(movieTitle) || movieTitle.includes(omdbTitle);
-      
-      if (foundExactMatch) {
-        poster = omdb.Poster && omdb.Poster !== "N/A" ? omdb.Poster : PLACEHOLDER_POSTER;
-        year = omdb.Year || movie.year || "???";
-        genres = omdb.Genre || "Невідомо";
-        imdbRating = omdb.imdbRating || "N/A";
-        plot = omdb.Plot || "Опис недоступний";
-        runtime = omdb.Runtime || "N/A";
-        
-        // 🆕 ТОЧНЕ IMDb ПОСИЛАННЯ
-        if (omdb.imdbID && omdb.imdbID !== "N/A" && omdb.imdbID.startsWith('tt')) {
-          imdbUrl = `https://www.imdb.com/title/${omdb.imdbID}/`;
-        }
-      }
-    }
+  // Статистика фільму з датасету
+  const movieStats = ratings[targetMovie.id];
+  const totalRatings = movieStats?.total || 0;
+  const avgRating = movieStats?.avg?.toFixed(2) || 'N/A';
 
-    out.innerHTML = `
-      <div class="card">
-        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start;">
-          <img class="poster" 
-               src="${poster}" 
-               alt="${movie.title}" 
-               style="flex-shrink: 0; width: 200px; height: 300px; object-fit: cover; border-radius: 8px;" />
-          
-          <div class="info" style="flex: 1; min-width: 300px;">
-            <h2 style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 1.5rem;">
-              ${movie.title}
-            </h2>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
-              <div>
-                <strong>ID:</strong> ${id}<br>
-                <strong>Рік:</strong> ${year}<br>
-                <strong>Тривалість:</strong> ${runtime}
-              </div>
-              <div>
-                <strong>Жанри:</strong> ${genres}<br>
-                <strong>IMDb:</strong> ${imdbRating}
-              </div>
-            </div>
-            
-            <p style="margin: 1rem 0; line-height: 1.6; color: #333; ${!foundExactMatch ? 'opacity: 0.7;' : ''}">
-              <strong>Опис:</strong> ${plot}
-            </p>
-            
-            ${foundExactMatch ? 
-              `<a href="${imdbUrl}" target="_blank" class="imdb-link" rel="noopener">
-                🎬 Відкрити на IMDb
-              </a>` :
-              `<p class="warning" style="margin: 1rem 0;">
-                ⚠️ Точний збіг не знайдено в OMDb
-              </p>`
-            }
-            
-            <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem;">
-              <strong>📋 Оригінальні дані MovieLens:</strong><br>
-              Назва: <code>${movie.title} (${movie.year})</code><br>
-              IMDb ID: <code>${movie.imdb || 'N/A'}</code>
-            </div>
-          </div>
+  resultDiv.innerHTML = `
+    <div class="card">
+      <h2>🎬 ${targetMovie.title} (${targetMovie.year})</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+        <div>
+          <strong>ID:</strong> ${targetMovie.id}<br>
+          <strong>Рейтингів:</strong> ${totalRatings}<br>
+          <strong>Середній:</strong> ${avgRating}
         </div>
       </div>
-    `;
+      <p><em>Детальна інформація з OMDb API буде додана тут...</em></p>
+    </div>
+  `;
+}
 
-  } catch (error) {
-    console.error('❌ OMDb помилка:', error);
-    
-    out.innerHTML = `
-      <div class="card">
-        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-          <img class="poster" src="${ERROR_POSTER}" alt="Помилка" 
-               style="flex-shrink: 0; width: 200px; height: 300px; border-radius: 8px;" />
-          
-          <div class="info" style="flex: 1; min-width: 300px;">
-            <h2 style="margin: 0 0 0.5rem 0; color: #1a1a1a;">${movie.title}</h2>
-            <p><strong>ID:</strong> ${id} | <strong>Рік:</strong> ${movie.year || '?'}</p>
-            <p class="error">⚠️ Помилка OMDb API</p>
-            ${movie.imdb && movie.imdb !== '\\N' ? 
-              `<a href="${movie.imdb}" target="_blank" class="imdb-link">🎬 Відкрити оригінальне IMDb</a>` : 
-              ''
-            }
-          </div>
-        </div>
-      </div>
-    `;
+// 🆕 ПЕРЕКЛЮЧЕННЯ ТАБІВ
+function switchTab(tabName) {
+  // Приховуємо всі секції
+  document.querySelectorAll('.search-section').forEach(section => {
+    section.classList.remove('active');
+  });
+  
+  // Активуємо потрібну
+  document.getElementById(tabName).classList.add('active');
+  
+  // Оновлюємо кнопки
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  // Показуємо статистику при переключенні
+  if (tabName === 'stats' && moviesLoaded && ratingsLoaded) {
+    showDatasetStats();
   }
 }
 
-function quickSearch(id) {
-  document.getElementById("movieId").value = id;
-  lookup();
+function updateProgress(percent) {
+  document.querySelector('.progress').style.width = `${percent}%`;
 }
 
 // Ініціалізація
 document.addEventListener('DOMContentLoaded', () => {
-  loadMovies();
+  loadFullDataset();
   
-  const input = document.getElementById("movieId");
-  input.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-      lookup();
-    }
+  // Enter для пошуку
+  document.getElementById('movieId').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') lookupMovie();
+  });
+  
+  document.getElementById('userId').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') lookupUser();
   });
 });
