@@ -1,4 +1,4 @@
-const API_KEY = "YOUR_OMDB_KEY";
+const API_KEY = "1106b01e";
 let movies = {};
 
 // Завантажуємо u.item
