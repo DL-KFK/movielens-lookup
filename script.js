@@ -9,6 +9,15 @@ let ratingsLoaded = false;
 const API_KEY = "1106b01e";
 const PLACEHOLDER_POSTER = `data:image/svg+xml;base64,...`; // з попереднього коду
 
+// Завантаження файлу датасету. Файли MovieLens 100K збережені в кодуванні ISO-8859-1 (latin-1),
+// тому декодуємо їх явно, інакше назви з діакритикою псуються.
+async function fetchText(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  const buf = await res.arrayBuffer();
+  return new TextDecoder('iso-8859-1').decode(buf);
+}
+
 // 🆕 ЗАВАНТАЖЕННЯ ВСЬОГО ДАТАСЕТУ
 async function loadFullDataset() {
   const resultDiv = document.getElementById('movieResult');
@@ -27,31 +36,39 @@ async function loadFullDataset() {
 
     // 1. Завантажуємо фільми
     console.log('📁 Завантажуємо u.item...');
-    const moviesResponse = await fetch('./u.item');
-    const moviesText = await moviesResponse.text();
+    const moviesText = await fetchText('./u.item');
     parseMovies(moviesText);
     updateProgress(33);
 
     // 2. Завантажуємо користувачів
     console.log('📁 Завантажуємо u.user...');
-    const usersResponse = await fetch('./u.user');
-    const usersText = await usersResponse.text();
+    const usersText = await fetchText('./u.user');
     parseUsers(usersText);
     updateProgress(66);
 
     // 3. Завантажуємо рейтинги
     console.log('📁 Завантажуємо u.data...');
-    const ratingsResponse = await fetch('./u.data');
-    const ratingsText = await ratingsResponse.text();
+    const ratingsText = await fetchText('./u.data');
     parseRatings(ratingsText);
     updateProgress(100);
 
     moviesLoaded = usersLoaded = ratingsLoaded = true;
     
+    const totalRatings = Object.values(ratings).reduce((sum, r) => sum + r.total, 0);
     console.log(`✅ Датасет завантажено:
     • Фільмів: ${Object.keys(movies).length}
     • Користувачів: ${Object.keys(users).length}
-    • Рейтингів: ${Object.keys(ratings).length}`);
+    • Рейтингів: ${totalRatings}`);
+
+    // Прибираємо картку «Завантаження…» — раніше вона лишалась назавжди
+    resultDiv.innerHTML = `
+      <div class="card">
+        <p>✅ Датасет завантажено: <strong>${Object.keys(movies).length}</strong> фільмів,
+        <strong>${Object.keys(users).length}</strong> користувачів,
+        <strong>${totalRatings.toLocaleString('uk-UA')}</strong> оцінок.</p>
+        <p>Введіть ID фільму (1–1682) або частину назви англійською, наприклад <code>Star Wars</code>.</p>
+      </div>
+    `;
 
     showDatasetStats();
 
@@ -150,7 +167,8 @@ function showDatasetStats() {
 
   // Статистика
   const totalRatings = Object.values(ratings).reduce((sum, r) => sum + r.total, 0);
-  const avgRating = totalRatings / Object.keys(ratings).length;
+  const sumRatings = Object.values(ratings).reduce((sum, r) => sum + r.ratings.reduce((a, b) => a + b, 0), 0);
+  const avgRating = totalRatings ? sumRatings / totalRatings : 0;
 
   statsGrid.innerHTML = `
     <div class="stat-card">
@@ -227,6 +245,7 @@ function showDatasetStats() {
 
 // 🆕 ПОШУК КОРИСТУВАЧА
 async function lookupUser() {
+  if (!usersLoaded) { document.getElementById('userResult').innerHTML = '<div class="card warning"><p>⏳ Датасет ще завантажується, зачекайте кілька секунд.</p></div>'; return; }
   const userId = document.getElementById('userId').value.trim();
   const resultDiv = document.getElementById('userResult');
 
@@ -261,7 +280,7 @@ async function lookupUser() {
         </div>
         <div>
           <strong>Кількість оцінок:</strong> ${userRatings.length}<br>
-          <strong>Середній рейтинг:</strong> ${userRatings.reduce((sum, r) => sum + r.rating, 0) / userRatings.length?.toFixed(2) || '0'}
+          <strong>Середній рейтинг:</strong> ${userRatings.length ? (userRatings.reduce((sum, r) => sum + r.rating, 0) / userRatings.length).toFixed(2) : '0'}
         </div>
       </div>
       
@@ -280,6 +299,7 @@ async function lookupUser() {
 
 // 🆕 ПОШУК ФІЛЬМУ (покращений)
 async function lookupMovie() {
+  if (!moviesLoaded) { document.getElementById('movieResult').innerHTML = '<div class="card warning"><p>⏳ Датасет ще завантажується, зачекайте кілька секунд.</p></div>'; return; }
   const movieId = document.getElementById('movieId').value.trim();
   const movieTitle = document.getElementById('movieTitle').value.trim().toLowerCase();
   const resultDiv = document.getElementById('movieResult');
@@ -340,9 +360,8 @@ function switchTab(tabName) {
   
   // Оновлюємо кнопки
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('active');
+    btn.classList.toggle('active', (btn.getAttribute('onclick') || '').includes(`'${tabName}'`));
   });
-  event.target.classList.add('active');
   
   // Показуємо статистику при переключенні
   if (tabName === 'stats' && moviesLoaded && ratingsLoaded) {
@@ -351,7 +370,8 @@ function switchTab(tabName) {
 }
 
 function updateProgress(percent) {
-  document.querySelector('.progress').style.width = `${percent}%`;
+  const bar = document.querySelector('.progress');
+  if (bar) bar.style.width = `${percent}%`;
 }
 
 // Ініціалізація
